@@ -14,8 +14,9 @@ public class RaycastInteraction : MonoBehaviour
     [SerializeField] private float minDistance;  // Минимальная дистанция между предметом и персонажем
 
 
-    private bool canRotate = true;
-    [SerializeField] private BackpackUI backpackUI;
+    private bool canRotate = true; // Флаг, регулирующий вращение предмета. Предотвращает двойное вращение по нажатию клавиши R
+    [SerializeField] private BackpackUI backpackUI; // Скрипт объекта Backpack Canvas
+    private bool dropItem = false; // Флаг, учасвстует в создании задержки между выполнением функции DropItem() и функции HandleRaycastHighlight()
 
     void Start()
     {
@@ -25,19 +26,48 @@ public class RaycastInteraction : MonoBehaviour
 
     void Update()
     {
-        // Если предмет уже поднят, следуем за курсором с проверкой столкновений
-        if (heldItem != null)
+        HandleInteractionInput();
+        HandleItemRotation();
+
+        if (heldItem != null) return; // Если предмет уже лежит в руках, то прекращаем вызов следующего кода.
+
+        if(dropItem ==  false) // Проверка, выпущен ли предмет из рук
         {
-            FollowMouseWithCollision();
+            HandleRaycastHighlight();
+        }
+       
+
+
+
+    }
+
+    private void HandleInteractionInput() // Если предмет уже лежит в "руках".
+    {
+        if (heldItem != null) // Проверка поднят ли предмет
+        {
+            FollowMouseWithCollision(); // Следование предмета за курсором
+
+            // Отпустить предмет по нажатию "E"
             if (Input.GetKeyDown(KeyCode.E))
             {
                 DropItem();  // Опускаем предмет
             }
+
+            // Сложить предмет в рюкзак по нажатию клавиши "F"
             if (Input.GetKeyDown(KeyCode.F))
             {
                 StoreInBackpack();
             }
 
+        }
+    }
+
+    private void HandleItemRotation() // Вращение предмета в "руках"
+    {
+        // Проверяем вращение для удерживаемого предмета
+        if (heldItem != null)
+        {
+            // Проверка нажатия клавиши "R" для поворота
             if (Input.GetKey(KeyCode.R) && canRotate)
             {
                 // Поворачиваем предмет вокруг мировой оси Y
@@ -58,53 +88,61 @@ public class RaycastInteraction : MonoBehaviour
             {
                 canRotate = true;
             }
-
-            return;
         }
+    }
+
+    private void HandleRaycastHighlight() // создаёт луч, направленный от центра экрана вперёд.
+            // Если луч попадает на объект с тегом "Item", включается подсветка и даётся возможность поднять предмет по нажатию клавиши E.
+    {       // Если луч не попадает на предмет, подсветка сбрасывается.
 
         // Создаем луч от центра экрана через позицию камеры
         Ray ray = Camera.main.ScreenPointToRay(screenCenter);
-        RaycastHit hit;
+        RaycastHit hit; //  переменная RaycastHit, в которую будет сохранена информация о столкновении, если луч пересечёт Collider
 
-        if (Physics.Raycast(ray, out hit, interactionDistance))
-        {
-            if (hit.collider.CompareTag("Item"))
+        if (Physics.Raycast(ray, out hit, interactionDistance) && hit.collider.CompareTag("Item"))
+        {    // Если луч пересекает collider объекта, то информация о столкновении сохраняется в RaycastHit hit.
+
+            currentItem = hit.collider.gameObject;
+            UpdateItemHighlight();
+
+            // Проверка нажатия клавиши для подъема предмета
+            if (Input.GetKeyDown(KeyCode.E))
             {
-                currentItem = hit.collider.gameObject;
-
-                if (currentItem != lastItem)
-                {
-                    // Убираем обводку с предыдущего предмета
-                    if (lastItem != null && lastItem.TryGetComponent<ObjectHighlight>(out var lastHighlight))
-                    {
-                        lastHighlight.DisableOutline();
-                    }
-
-                    // Включаем обводку на новом предмете
-                    if (currentItem.TryGetComponent<ObjectHighlight>(out var currentHighlight))
-                    {
-                        currentHighlight.EnableOutline();
-                    }
-
-                    lastItem = currentItem;
-                }
-
-                // Проверка нажатия клавиши для подъема предмета
-                if (Input.GetKeyDown(KeyCode.E))
-                {
-                    PickUpItem();
-                }
+                PickUpItem();
             }
         }
-        else if (lastItem != null)
+        else
         {
-            // Сбрасываем обводку, если луч не направлен на объект
-            if (lastItem.TryGetComponent<ObjectHighlight>(out var lastHighlight))
+            ResetLastItemHighlight(); // Работает в случае когда отходишь от всех предметов,  отключает выделение с последнего предмета
+        }
+    }
+    private void UpdateItemHighlight() // Включает подсветку (highlight) текущего предмета.
+                                       // Подсветка служит визуальной подсказкой, что этот предмет может быть подобран.
+    {
+        if (currentItem != lastItem)
+        {
+            // Убираем обводку с предыдущего предмета
+            if (lastItem != null && lastItem.TryGetComponent<ObjectHighlight>(out var lastHighlight))
             {
                 lastHighlight.DisableOutline();
             }
-            lastItem = null;
+
+            // Включаем обводку на новом предмете
+            if (currentItem.TryGetComponent<ObjectHighlight>(out var currentHighlight))
+            {
+                currentHighlight.EnableOutline();
+            }
+
+            lastItem = currentItem;
         }
+    }
+    private void ResetLastItemHighlight() // Убирает подсветку с последнего выделенного предмета.
+    {
+        if (lastItem != null && lastItem.TryGetComponent<ObjectHighlight>(out var lastHighlight))
+        {
+            lastHighlight.DisableOutline(); // Отключаем обводку предмета
+        }
+        lastItem = null;
     }
 
     private void PickUpItem()
@@ -121,7 +159,6 @@ public class RaycastInteraction : MonoBehaviour
         }
 
         // Сбрасываем масштаб объекта на исходное значение, чтобы избежать изменений
-
         if (heldItem.TryGetComponent<ObjectHighlight>(out var command))
         {
             heldItem.transform.localScale = command.InitialSize();
@@ -138,12 +175,15 @@ public class RaycastInteraction : MonoBehaviour
             rb.isKinematic = false; // Делаем объект некенематическим для учета физики.
             rb.useGravity = true;  // Включаем гравитацию
         }
-
+       
         heldItem = null;
+        
+        StartCoroutine(Delay());
     }
 
-    private void FollowMouseWithCollision()
-    {
+    private void FollowMouseWithCollision() // Функция, организующая следование предмета за курсором.
+    {                                      // Предмет в данном случае лежит в руках
+
         // Получаем позицию курсора на экране
         Vector3 mousePos = Input.mousePosition;
         mousePos.z = holdDistance;  // Устанавливаем глубину для позиции перед персонажем
@@ -155,7 +195,7 @@ public class RaycastInteraction : MonoBehaviour
         Rigidbody rb = heldItem.GetComponent<Rigidbody>();
         if (rb != null)
         {
-            float distanceToPlayer = Vector3.Distance(transform.position, targetPos);
+            float distanceToPlayer = Vector3.Distance(transform.position, targetPos); // Вычисление дистанции между персонажем и предметом
             if (distanceToPlayer > minDistance)
             {
                 // Двигаем предмет с учетом физики, не допуская приближения ближе минимального расстояния
@@ -169,7 +209,7 @@ public class RaycastInteraction : MonoBehaviour
         }
     }
 
-    void StoreInBackpack()
+    void StoreInBackpack() // Функция Выполняет роль переноса вещи из рук в рюкзак
     {
         if (heldItem != null && backpackUI != null)
         {
@@ -177,5 +217,13 @@ public class RaycastInteraction : MonoBehaviour
             heldItem.SetActive(false); // Отключаем предмет в сцене
             heldItem = null; // Убираем предмет из рук
         }
+    }
+
+    IEnumerator Delay() // Необходимая задержка между выполением функции DropItem() и функции HandleRaycastHighlight()
+    {  // Без неё начинаются проблемы с переключением состояний подобрал, положил. Предмет просто не опускается на землю.
+       // В предыдущих скриптах срабатывала директива return (для выхода из метода Update()), здесь почему - то не работает.
+        dropItem = true;
+        yield return new WaitForSeconds(0.2f);
+        dropItem = false;
     }
 }

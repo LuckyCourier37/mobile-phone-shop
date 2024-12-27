@@ -5143,14 +5143,13 @@ MonoBehaviour:
   LastCamera: {fileID: 2103445049}
   settings: {fileID: 5071479980181471659}
   tumbler: 0
-  PanelUI: {fileID: 1177538651}
-  GeneralMenu: {fileID: 889290127}
+  BackPanelUI: {fileID: 1177538651}
+  TitleScreen: {fileID: 889290127}
   ExitButton: {fileID: 1298315535}
   PersonScript: {fileID: 2103445047}
   RevertButton: {fileID: 1502528447}
   StartButton: {fileID: 716145834}
   Controls: {fileID: 644048366}
-  flagtoCloseMenu: {fileID: 1402476635}
   flagPanelSettings: {fileID: 1402476635}
 --- !u!1 &1496816597
 GameObject:
@@ -7683,6 +7682,7 @@ MonoBehaviour:
   interactionDistance: 2
   minDistance: 1
   backpackUI: {fileID: 1371353149}
+  dropItem: 0
 --- !u!1 &2103445049 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4459864851310106424, guid: 6bacecc4f3df9584198879c73a6b6c36, type: 3}
@@ -7932,6 +7932,10 @@ PrefabInstance:
       propertyPath: Mcamera
       value: 
       objectReference: {fileID: 963194225}
+    - target: {fileID: 1135591080923818325, guid: 4a1177edae3fee24ca53dc749403674c, type: 3}
+      propertyPath: Maincamera
+      value: 
+      objectReference: {fileID: 963194225}
     - target: {fileID: 1940851024774787550, guid: 4a1177edae3fee24ca53dc749403674c, type: 3}
       propertyPath: script
       value: 
@@ -7948,6 +7952,10 @@ PrefabInstance:
       propertyPath: manager
       value: 
       objectReference: {fileID: 1475946727}
+    - target: {fileID: 6069946610221986174, guid: 4a1177edae3fee24ca53dc749403674c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6072258512533343141, guid: 4a1177edae3fee24ca53dc749403674c, type: 3}
       propertyPath: m_text
       value: Pick up tools and put them in the inventory.
